@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="https://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head>
+    <meta charset="UTF-8">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+    <title>STUDENT ENROLLMENT SYSTEM</title>
+</head>
+<body>
+<div>
+    <nav class="navbar navbar-expand-lg bg-body-tertiary bg-dark" data-bs-theme="dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">STUDENT ENROLLMENT SYSTEM</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/register">Register</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/enrollment">Enrollment</a>
+                    </li>
+
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item" sec:authorize="isAuthenticated()">
+                        <form th:if="${#authorization.expression('isAuthenticated()')}" method="post" th:action="@{/logout}" class="nav-link" style="display: inline-block; padding: 0;">
+                            <input type="submit" value="Logout" class="btn btn-link" style="padding: 0; color: red;">
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</div>
+<div class="container col-md-6 justify-content-center" sec:authorize="!isAuthenticated()">
+    <h3>Login</h3>
+    <hr>
+   <div>
+   <div></div>
+
+       <!-- Pills content -->
+       <div class="tab-content">
+           <div class="tab-pane fade show active" id="pills-login" role="tabpanel" aria-labelledby="tab-login">
+               <form th:action="@{/login}" method="post">
+                   <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                       Invalid username or password.
+                   </div>
+
+                   <!-- Email input -->
+                   <div class="form-outline col-md-6">
+                       <label class="form-label" for="username">Username</label>
+                       <input type="text" id="username" name="username" class="form-control" />
+                   </div>
+
+                   <!-- Password input -->
+                   <div class="form-outline col-md-6">
+                       <label class="form-label" for="password">Password</label>
+                       <input type="password" id="password" name="password" class="form-control" />
+                   </div>
+
+                    <div>&nbsp;</div>
+                   <!-- Submit button -->
+                   <div class="d-grid gap-2 col-6">
+                       <button type="submit" class="btn btn-primary btn-block md-5">Sign in</button>
+                   </div>
+
+
+                   <!-- Register buttons -->
+                   <div class="d-grid gap-2 col-6 text-center">
+                       <p>Not a student? <a href="/register">Register</a></p>
+                   </div>
+               </form>
+           </div>
+
+       </div>
+       <!-- Pills content -->
+   </div>
+</div>
+<!-- Content to show when the user is authenticated -->
+<div class="container col-md-6 justify-content-center" sec:authorize="isAuthenticated()">
+    <h3>Welcome to the Student Enrollment System</h3>
+    <img src="/images/centennial.jpg" alt="Centennial College" />
+    <p>Centennial College</p>
+</div>
+</body>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var authenticationError = /*[[${authenticationError}]]*/ null;
+
+    if (authenticationError) {
+        alert(authenticationError);
+    }
+    /*]]>*/
+</script>
+
+</html>
