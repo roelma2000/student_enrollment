@@ -43,37 +43,20 @@
   </nav>
 </div>
 <div class="container col-md-6 justify-content-center">
-  <h3>Program Registration</h3>
+  <h3>Student Registration</h3>
   <hr>
-  <div>
-    <form th:action="@{/checkout}" method="post">
-      <h4>Select a program:</h4>
-      <div class="form-check" th:each="program : ${programs}">
-        <input class="form-check-input program-radio" type="radio" th:id="${'program-' + program.programCode}" th:value="${program.programCode}" th:name="programCode" required>
-        <label class="form-check-label" th:for="${'program-' + program.programCode}" th:text="${program.programName}" data-bs-toggle="modal" th:data-bs-target="${'#program-' + program.programCode + '-modal'}"></label>
-        <!-- Modal for program details -->
-        <div class="modal fade" th:id="${'program-' + program.programCode + '-modal'}" tabindex="-1" aria-labelledby="programDetailsModalLabel" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="programDetailsModalLabel" th:text="${program.programName}"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">
-                <p><strong>Start Date:</strong> <span th:text="${program.startDate}"></span></p>
-                <p><strong>Duration:</strong> <span th:text="${program.duration}"></span></p>
-                <p><strong>Fee:</strong> <span th:text="'$' + ${#numbers.formatDecimal(program.fee, 0, 2)}"></span> CAD</p>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-      <button type="submit" class="btn btn-primary mt-3">Proceed to Checkout</button>
-    </form>
+  <div class="container col-md-6 justify-content-center">
+    <h3>Payment Confirmation</h3>
+    <hr>
+    <h5>Receipt Number: <span th:text="${billing.receiptno}"></span></h5>
+    <h5>Enrollment Number: <span th:text="${billing.applicationNo}"></span></h5>
+    <h5>Full Name: <span th:text="${currentUser.firstname + ' ' + currentUser.lastname}"></span></h5>
+    <h5>Program: <span th:text="${selectedProgram.programName}"></span></h5>
+    <h5>Total Amount: <span th:text="'$' + ${#numbers.formatDecimal(enrollment.amountPaid, 0, 2)}"></span> CAD</h5>
+    <hr>
+    <h5>Payment Status: <span th:text="${enrollment.status}"></span></h5>
+    <h5>Enrollment Date: <span th:text="${enrollment.startDate}"></span></h5>
+    <p>Thank you for your payment! Your enrollment is now complete.</p>
   </div>
 </div>
 </body>

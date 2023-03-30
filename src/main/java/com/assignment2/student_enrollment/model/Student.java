@@ -15,6 +15,7 @@ import javax.persistence.*;
 public class Student {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //generating auto inc
+    @Column(name = "id")
     private int studentId;
     private String userName;
     private String password;
@@ -28,5 +29,4 @@ public class Student {
         BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
         this.password = passwordEncoder.encode(password);
     }
-
 }

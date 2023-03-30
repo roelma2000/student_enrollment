@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.time.LocalDate;
 
 @Entity  //for creating the table
 @Table(name = "tblprograms")
@@ -15,6 +16,7 @@ public class Programs {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int programCode;
     private String programName;
+    private LocalDate startDate;
     private String duration;
     private double fee;
 }

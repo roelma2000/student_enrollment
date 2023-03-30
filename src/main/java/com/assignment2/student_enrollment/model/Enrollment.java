@@ -15,8 +15,16 @@ public class Enrollment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) //generating auto inc
     private int applicationNo;
-    private  int studentId;
-    private  int programCode;
+    @ManyToOne
+    @JoinColumn(name = "student_id", referencedColumnName = "id", nullable = false)
+    private Student student;
+//    private  int programCode;
+    @ManyToOne
+    @JoinColumn(name = "programCode")
+    private Programs program;
+
+    @OneToOne(mappedBy = "enrollment")
+    private Billing billing;
     private LocalDate startDate;
     private  double amountPaid;
     private String status;

@@ -21,16 +21,18 @@
             <a class="nav-link active" aria-current="page" href="/">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/register">Programs</a>
+            <a class="nav-link" href="/register">Account</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/enrollment">Enrollment</a>
+            <a class="nav-link" href="/enrollment">Registration</a>
           </li>
-
+          <li class="nav-item">
+            <a class="nav-link" href="/enrollment">My Program</a>
+          </li>
         </ul>
         <ul class="navbar-nav ms-auto">
           <li class="nav-item" sec:authorize="isAuthenticated()">
-            <span th:text="${currentUser.firstname + ' ' + currentUser.lastname}" class="me-3" style="color: white;"></span>
+            <span th:text="${currentUser != null ? currentUser.firstname + ' ' + currentUser.lastname : ''}" class="me-3" style="color: white;"></span>
             <form th:if="${#authorization.expression('isAuthenticated()')}" method="post" th:action="@{/logout}" class="nav-link" style="display: inline-block; padding: 0;">
               <input type="submit" value="Logout" class="btn btn-link" style="padding: 0; color: red;">
             </form>
@@ -40,10 +42,36 @@
     </div>
   </nav>
 </div>
-<div class="container col-md-6 justify-content-center">
-  <h3>Student Registration</h3>
+<div class="container col-md-10">
+  <h3>My Programs</h3>
   <hr>
 
+  <p>Name: <span th:text="${currentUser.firstname + ' ' + currentUser.lastname}"></span></p>
+  <p>Address: <span th:text="${currentUser.address + ', ' + currentUser.city + ' ' + currentUser.postalCode}"></span></p>
+  <hr>
+
+  <table class="table">
+    <thead>
+    <tr>
+      <th scope="col">Program</th>
+      <th scope="col">Start Date</th>
+      <th scope="col">Duration</th>
+      <th scope="col">Status</th>
+      <th scope="col">Receipt No</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="studentProgram : ${studentPrograms}">
+      <td th:text="${studentProgram.programName}"></td>
+      <td th:text="${studentProgram.startDate}"></td>
+      <td th:text="${studentProgram.duration}"></td>
+      <td th:text="${studentProgram.status}"></td>
+      <td th:text="${studentProgram.receiptNo}"></td>
+    </tr>
+
+    </tbody>
+  </table>
 </div>
+
 </body>
 </html>

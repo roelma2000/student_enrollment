@@ -21,16 +21,18 @@
             <a class="nav-link active" aria-current="page" href="/">Home</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/register">Register</a>
+            <a class="nav-link" href="/register">Account</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/enrollment">Enrollment</a>
+            <a class="nav-link" href="/enrollment">Registration</a>
           </li>
-
+          <li class="nav-item">
+            <a class="nav-link" href="/enrollment">My Program</a>
+          </li>
         </ul>
         <ul class="navbar-nav ms-auto">
           <li class="nav-item" sec:authorize="isAuthenticated()">
-            <span th:text="${currentUser.firstname + ' ' + currentUser.lastname}" class="me-3" style="color: white;"></span>
+            <span th:text="${currentUser != null ? currentUser.firstname + ' ' + currentUser.lastname : ''}" class="me-3" style="color: white;"></span>
             <form th:if="${#authorization.expression('isAuthenticated()')}" method="post" th:action="@{/logout}" class="nav-link" style="display: inline-block; padding: 0;">
               <input type="submit" value="Logout" class="btn btn-link" style="padding: 0; color: red;">
             </form>
