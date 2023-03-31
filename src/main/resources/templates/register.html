@@ -50,7 +50,7 @@
       <div class="col-md-6">
         <div class="form-outline mb-3">
           <label class="form-label" for="userName">Username</label>
-          <input type="text" id="userName" th:field="*{userName}" class="form-control" />
+          <input type="text" id="userName" th:field="*{userName}" class="form-control" th:readonly="${#authorization.expression('isAuthenticated()')}" />
           <div th:if="${#fields.hasErrors('userName')}" th:errors="*{userName}" class="text-danger"></div>
         </div>
         <div class="form-outline mb-3">

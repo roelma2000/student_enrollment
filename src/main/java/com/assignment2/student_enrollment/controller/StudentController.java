@@ -8,7 +8,9 @@ import com.assignment2.student_enrollment.model.Enrollment;
 import com.assignment2.student_enrollment.repository.EnrollmentRepository;
 import com.assignment2.student_enrollment.model.Billing;
 import com.assignment2.student_enrollment.repository.BillingRepository;
+import com.assignment2.student_enrollment.security.WebSecurityConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -39,6 +41,8 @@ public class StudentController {
     @Autowired
     private BillingRepository billingRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
     /**
      * Handle index
      * - The method first checks whether the principal parameter is null.
@@ -237,6 +241,7 @@ public class StudentController {
      *  - checks whether the user is authenticated by checking the principal parameter
      *  -  If the user is authenticated,
      *      -- retrieves the current Student entity
+     *      -- check for binding errors
      *      -- sets the studentId property of the student object to the current user's studentId to ensure
      *         that the updated Student object is associated with the correct user.
      *      -- save updated object
@@ -245,49 +250,36 @@ public class StudentController {
      */
     @PostMapping("/register")
     public String registerStudent(@Valid Student student, BindingResult bindingResult, Model model, Principal principal){
-        // Check if the username already exists
-        Student existingStudent = studentRepository.findByUserName(student.getUserName());
-        if (existingStudent != null) {
-            bindingResult.addError(new FieldError("student", "userName", "Username already exists. Please choose a different username."));
+
+        if (principal == null || !student.getUserName().equals(principal.getName())) {
+            // Check if the username already exists
+            Student existingStudent = studentRepository.findByUserName(student.getUserName());
+            if (existingStudent != null) {
+                bindingResult.addError(new FieldError("student", "userName", "Username already exists. Please choose a different username."));
+            }
         }
-        //Username validation
-        if(student.getUserName().isBlank()){
-            bindingResult.addError(new FieldError("student","userName","Username should not be blank."));
-        }
-        //Password validation
-        if(student.getPassword().isBlank()){
-            bindingResult.addError(new FieldError("student","password","Password should not be blank."));
-        }
-        //firstname
-        if(student.getFirstname().isBlank()){
-            bindingResult.addError(new FieldError("student","firstname","Firstname should not be blank."));
-        }
-        //lastname
-        if(student.getLastname().isBlank()){
-            bindingResult.addError(new FieldError("student","lastname","Lastname should not be blank."));
-        }
-        //address
-        if(student.getAddress().isBlank()){
-            bindingResult.addError(new FieldError("student","address","Address should not be blank."));
-        }
-        //city
-        if(student.getCity().isBlank()){
-            bindingResult.addError(new FieldError("student","city","City should not be blank."));
-        }
-        // postalCode
-        if(student.getPostalCode().isBlank() || student.getPostalCode().length() > 7){
-            bindingResult.addError(new FieldError("student","postalCode","postalCode should not be blank."));
-        }
+
         if(bindingResult.hasErrors()){
             return "register";
         }
 
         if (principal != null) {
-            // If the user is authenticated, update their account
+            // Update scenario
             Student currentUser = studentRepository.findByUserName(principal.getName());
             if (currentUser != null) {
                 student.setStudentId(currentUser.getStudentId());
+                student.setUserName(currentUser.getUserName()); // Keep the existing username
+
+                // Keep the existing password if the input is blank or the same as the current password
+                if (student.getPassword().isBlank() || passwordEncoder.matches(student.getPassword(), currentUser.getPassword())) {
+                    student.setPassword(currentUser.getPassword());
+                } else {
+                    student.setPassword(passwordEncoder.encode(student.getPassword())); // Update the password with the new hashed password
+                }
             }
+        }else {
+            // Hash the password before saving
+            student.setPassword(passwordEncoder.encode(student.getPassword()));
         }
 
         studentRepository.save(student);
