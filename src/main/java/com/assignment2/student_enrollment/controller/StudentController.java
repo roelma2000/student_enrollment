@@ -32,17 +32,19 @@ import java.util.stream.Collectors;
 public class StudentController {
     @Autowired
     private StudentRepository studentRepository;
-
     @Autowired
     private ProgramsRepository programsRepository;
-
     @Autowired
     private EnrollmentRepository enrollmentRepository;
-
     @Autowired
     private BillingRepository billingRepository;
+
     /**
-     * Code for index page - registration login
+     * Handle index
+     * - The method first checks whether the principal parameter is null.
+     * - If it is not null, it uses the studentRepository to find the Student entity with the same username
+     * as the authenticated user's name property. It then adds this Student entity to the Model
+     * object with the key "currentUser".
      */
     @GetMapping({"/", "/index"})
     public String index(Model model, Principal principal) {
@@ -53,7 +55,15 @@ public class StudentController {
         return "index";
     }
 
-
+    /**
+     * Handle Login page
+     * - The method first checks whether the authenticationError attribute is present in the user's session
+     * by calling request.getSession().getAttribute("authenticationError"). If it is present, the value of the
+     * authenticationError attribute is added to the Model object with the key "authenticationError".
+     *
+     * - The method then calls request to remove the authenticationError property to prevent the error message
+     * from appearing on future requests.
+     */
     @RequestMapping({"/", "/login"})
     public String getLoginPage(HttpServletRequest request, Model model) {
         if (request.getSession().getAttribute("authenticationError") != null) {
@@ -65,7 +75,11 @@ public class StudentController {
 
 
     /**
-     * Code for enrollment page
+     * Handle enrollment page
+     * 1. Gets the currently authenticated user's Authentication object from the SecurityContextHolder
+     * 2. Use studentRepository to find username and adds this Student entity to Model object with key "currentUser"
+     * 3. Retrieves all Programs then add program to Model object with key "programs"
+     * 4. Render enrollment
      */
     @GetMapping("/enrollment")
     public String enrollmentPage(Model model) {
@@ -78,8 +92,28 @@ public class StudentController {
         return "enrollment";
     }
 
+    /**
+     * Handle enrollment page - Process the enrollment
+     * -> @RequestParam("programCode") - parameter extracted from the request's query string.
+     * -> @ModelAttribute("billing") Billing billing - specifies billing object is bound to the HTTP request's body.
+     * -> BindingResult bindingResult - collect errors from the form submission.
+     * -> Model model - used to add attributes to the view that will be rendered.
+     * -> Principal principal - represents the currently authenticated user.
+     *
+     * 1. Uses the studentRepository to find the Student entity with the same username as the authenticated user's
+     *          name property
+     * 2. Retrieves the Programs entity with the specified programCode from the programsRepository
+     * 3. If there are any validation errors, add list of errors to Model errors. Pass back models to checkout page.
+     * 4. If no validation errors,
+     *      a. calculate final payment
+     *      b. create new Enrollment object, set properties, save via enrollmentRepository
+     *      c. generate random receipt number
+     *      d. save billing
+     *      e. Add savedEnrollment, selectedProgram ....objects to model objects to return to view
+     */
     @PostMapping("/process-enrollment")
-    public String processEnrollment(@RequestParam("programCode") int programCode, @ModelAttribute("billing") Billing billing, BindingResult bindingResult, Model model, Principal principal) {
+    public String processEnrollment(@RequestParam("programCode") int programCode, @ModelAttribute("billing") Billing
+            billing, BindingResult bindingResult, Model model, Principal principal) {
         // Get the current user
         Student currentUser = studentRepository.findByUserName(principal.getName());
 
@@ -112,7 +146,7 @@ public class StudentController {
             enrollment.setStartDate(selectedProgram.getStartDate()); // Set the startDate from the selected program
 
             // Save the enrollment
-//            Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
+           Enrollment savedEnrollment = enrollmentRepository.save(enrollment);
 
             // Generate 18 random numbers and 2 random letters for receiptno
             String receiptno = generateRandomReceiptNo();
@@ -124,10 +158,6 @@ public class StudentController {
             // Save the billing object in the database
             billingRepository.save(billing);
 
-
-            // Retrieve the saved enrollment
-            Enrollment savedEnrollment = billing.getEnrollment();
-
             model.addAttribute("enrollment", savedEnrollment);
             model.addAttribute("selectedProgram", selectedProgram);
             model.addAttribute("currentUser", currentUser);
@@ -137,9 +167,52 @@ public class StudentController {
         }
     }
 
+    /**
+     * Handle checkout page
+     * - Uses the studentRepository to find the Student entity with the same username
+     * - Retrieves the Programs entity with the specified programCode from the programsRepository.
+     */
+    @PostMapping("/checkout")
+    public String showCheckoutPage(@RequestParam("programCode") int programCode, Model model, Principal principal) {
+        // Get the current user
+        Student currentUser = studentRepository.findByUserName(principal.getName());
+
+        // Get the selected program
+        Programs selectedProgram = programsRepository.findById(programCode)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid program code: " + programCode));
+
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("program", selectedProgram);
+        model.addAttribute("billing", new Billing());
+
+        return "checkout";
+    }
 
     /**
-     * Code for Registration page
+     * Generate Random Receipt Number for Billing
+     */
+    private String generateRandomReceiptNo() {
+        // Generate 18 random digits
+        String digits = new Random().ints(18, 0, 10)
+                .mapToObj(Integer::toString)
+                .collect(Collectors.joining());
+
+        // Generate 2 random uppercase letters
+        String letters = new Random().ints(2, 'A', 'Z' + 1)
+                .mapToObj(i -> (char) i)
+                .map(String::valueOf)
+                .collect(Collectors.joining());
+
+        return digits + letters;
+    }
+
+    /**
+     * Handle Registration page
+     * - Checks whether the principal parameter is null.
+     * - Uses studentRepository to find the Student entity using authenticated username property.
+     * - Add Student entity to the Model object with the key "currentUser"
+     * - Also adds it to the Model object with the key "student" - for Account Update
+     * - If the principal parameter is null, add new Student - for Account Create
      */
     @GetMapping("/register")
     public String showRegistrationForm(Model model, Principal principal) {
@@ -153,8 +226,30 @@ public class StudentController {
         return "register";
     }
 
+    /**
+     * Handle Registration page
+     * Parameters:
+     * ---> @Valid Student student specifies that the student object is validated against its defined constraints.
+     * ---> BindingResult bindingResult is used to collect errors from the form submission.
+     * ---> Model model is used to add attributes to the view that will be rendered.
+     * ---> Principal principal represents the currently authenticated user.
+     *
+     *  - checks whether the user is authenticated by checking the principal parameter
+     *  -  If the user is authenticated,
+     *      -- retrieves the current Student entity
+     *      -- sets the studentId property of the student object to the current user's studentId to ensure
+     *         that the updated Student object is associated with the correct user.
+     *      -- save updated object
+     *  - if authenticated, redirect to "/"
+     *  - if not authenticated, redirect tp "/login" to re-login
+     */
     @PostMapping("/register")
     public String registerStudent(@Valid Student student, BindingResult bindingResult, Model model, Principal principal){
+        // Check if the username already exists
+        Student existingStudent = studentRepository.findByUserName(student.getUserName());
+        if (existingStudent != null) {
+            bindingResult.addError(new FieldError("student", "userName", "Username already exists. Please choose a different username."));
+        }
         //Username validation
         if(student.getUserName().isBlank()){
             bindingResult.addError(new FieldError("student","userName","Username should not be blank."));
@@ -183,8 +278,6 @@ public class StudentController {
         if(student.getPostalCode().isBlank() || student.getPostalCode().length() > 7){
             bindingResult.addError(new FieldError("student","postalCode","postalCode should not be blank."));
         }
-
-
         if(bindingResult.hasErrors()){
             return "register";
         }
@@ -208,70 +301,46 @@ public class StudentController {
         }
     }
 
-/**
- * Code for checkout page
- */
-@PostMapping("/checkout")
-public String showCheckoutPage(@RequestParam("programCode") int programCode, Model model, Principal principal) {
-    // Get the current user
-    Student currentUser = studentRepository.findByUserName(principal.getName());
 
-    // Get the selected program
-    Programs selectedProgram = programsRepository.findById(programCode)
-            .orElseThrow(() -> new IllegalArgumentException("Invalid program code: " + programCode));
+    /**
+     * Handle Programs page
+     *  - Gets the currently authenticated user's Authentication object
+     *  - Retrieves the current Student entity
+     *  - Find all Enrollment entities  by calling enrollmentRepository.findByStudent(currentUser)
+     *  - Create list of StudentProgramsDTO objects
+     *  - Iterates over each Enrollment object and retrieves its associated Programs and Billing objects to
+     *      create a new StudentProgramsDTO object for each enrollment
+     *  - Adds the currentUser and studentPrograms objects to the Model object for Programs to render
+     *  - redirect to '/programs'
+     */
+    @GetMapping("/programs")
+    public String showProgramsPage(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Student currentUser = studentRepository.findByUserName(auth.getName());
+        List<Enrollment> enrollments = enrollmentRepository.findByStudent(currentUser);
+        List<StudentProgramsDTO> studentPrograms = new ArrayList<>();
 
-    model.addAttribute("currentUser", currentUser);
-    model.addAttribute("program", selectedProgram);
-    model.addAttribute("billing", new Billing());
+        for (Enrollment enrollment: enrollments){
+            Programs program = enrollment.getProgram();
+            int appNum = enrollment.getApplicationNo();
+            Billing billing = billingRepository.findByapplicationNo(appNum);
 
-    return "checkout";
-}
+            StudentProgramsDTO studentProgram = new StudentProgramsDTO(
+                    program.getProgramName(),
+                    program.getStartDate(),
+                    program.getDuration(),
+                    enrollment.getStatus(),
+                    billing.getReceiptno()
+            );
 
-    private String generateRandomReceiptNo() {
-        // Generate 18 random digits
-        String digits = new Random().ints(18, 0, 10)
-                .mapToObj(Integer::toString)
-                .collect(Collectors.joining());
+            studentPrograms.add(studentProgram);
+        }
 
-        // Generate 2 random uppercase letters
-        String letters = new Random().ints(2, 'A', 'Z' + 1)
-                .mapToObj(i -> (char) i)
-                .map(String::valueOf)
-                .collect(Collectors.joining());
+        model.addAttribute("currentUser", currentUser);
+        model.addAttribute("studentPrograms", studentPrograms);
 
-        return digits + letters;
+        return "programs";
     }
-/**
- * Code for Programs page
- */
-@GetMapping("/programs")
-public String showProgramsPage(Model model) {
-    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-    Student currentUser = studentRepository.findByUserName(auth.getName());
-    List<Enrollment> enrollments = enrollmentRepository.findByStudent(currentUser);
-    List<StudentProgramsDTO> studentPrograms = new ArrayList<>();
-
-    for (Enrollment enrollment: enrollments){
-        Programs program = enrollment.getProgram();
-        int appNum = enrollment.getApplicationNo();
-        Billing billing = billingRepository.findByapplicationNo(appNum);
-
-        StudentProgramsDTO studentProgram = new StudentProgramsDTO(
-                program.getProgramName(),
-                program.getStartDate(),
-                program.getDuration(),
-                enrollment.getStatus(),
-                billing.getReceiptno()
-        );
-
-        studentPrograms.add(studentProgram);
-    }
-
-    model.addAttribute("currentUser", currentUser);
-    model.addAttribute("studentPrograms", studentPrograms);
-
-    return "programs";
-}
 
 
 }

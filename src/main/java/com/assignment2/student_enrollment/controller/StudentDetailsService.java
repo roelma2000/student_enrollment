@@ -1,3 +1,7 @@
+/** this service is used by Spring Security to authenticate and authorize users based on their credentials and roles.
+ *      It provides a bridge between the application's authentication and authorization requirements and the database
+ *          where user details are stored.
+ **/
 package com.assignment2.student_enrollment.controller;
 
 import com.assignment2.student_enrollment.model.Student;
